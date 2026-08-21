@@ -11,7 +11,7 @@ const start = source.indexOf('function VenuePage({ user, setUser, saved, toggleS
 const end = source.indexOf('function DestinationsPage() {', start);
 if (start === -1 || end === -1) throw new Error('VenuePage boundaries were not found.');
 
-const replacement = String.raw`function VenuePage({ user, setUser, saved, toggleSave }) {
+const replacement = String.raw`function VenuePage({ user, saved, toggleSave }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [venue, setVenue] = useState(fallbackVenues.find(v => v.id === id) || fallbackVenues[0]);
@@ -54,7 +54,7 @@ const replacement = String.raw`function VenuePage({ user, setUser, saved, toggle
     if (!date) return setMessage('Please select a wedding date.');
     if (action === 'availability') return checkAvailability();
     if (!user || !localStorage.getItem('vs_token')) {
-      navigate('/login', { state: { from: `/venues/${id}` } });
+      navigate('/login', { state: { from: \`/venues/${id}\` } });
       return;
     }
     try {
@@ -99,13 +99,13 @@ const replacement = String.raw`function VenuePage({ user, setUser, saved, toggle
         </div>
       </div>
     </div>
-    {showBooking && <BookingSheet venue={venue} date={date} setDate={setDate} event={event} setEvent={setEvent} action={bookingAction} availability={availability} checkingAvailability={checkingAvailability} submit={submit} message={message} close={() => setShowBooking(false)}/>}
+    {showBooking && <BookingSheet venue={venue} date={date} setDate={setDate} event={event} setEvent={setEvent} availability={availability} checkingAvailability={checkingAvailability} submit={submit} message={message} close={() => setShowBooking(false)}/>}
   </main>;
 }
 
 function Stat({icon:Icon,value,label}) { return <div><Icon size={18}/><b>{value}</b><span>{label}</span></div>; }
 
-function BookingSheet({venue,date,setDate,event,setEvent,action,availability,checkingAvailability,submit,message,close}) {
+function BookingSheet({venue,date,setDate,event,setEvent,availability,checkingAvailability,submit,message,close}) {
   const available = availability?.status === 'available';
   const held = availability?.status === 'held';
   return <div className="sheet-backdrop" onClick={close}><div className="booking-sheet" onClick={e => e.stopPropagation()}>
