@@ -14,6 +14,7 @@ export const api = {
   venues: (params = {}) => request(`/venues?${new URLSearchParams(params)}`),
   venue: (id) => request(`/venues/${id}`),
   availability: (id, date) => request(`/venues/${id}/availability?${new URLSearchParams({ date })}`),
+  requestAvailability: (body) => request("/availability-request", { method: "POST", body: JSON.stringify(body) }),
   requestOtp: (body) => request("/auth/request-otp", { method: "POST", body: JSON.stringify(body) }),
   verifyOtp: (body) => request("/auth/verify-otp", { method: "POST", body: JSON.stringify(body) }),
   me: (token) => request("/auth/me", { headers: { Authorization: `Bearer ${token}` } }),
