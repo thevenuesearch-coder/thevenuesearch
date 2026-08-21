@@ -4,7 +4,7 @@ const path = require('path');
 const file = path.join(process.cwd(), 'src', 'App.js');
 let source = fs.readFileSync(file, 'utf8');
 
-// This patch runs after patch-frontend.js. Keep it safe to run repeatedly.
+// This script runs after patch-frontend.js. It is intentionally idempotent.
 if (!source.includes("const [availabilityEmail, setAvailabilityEmail] = useState('');")) {
   source = source.replace(
     "const [checkingAvailability, setCheckingAvailability] = useState(false);",
@@ -12,18 +12,67 @@ if (!source.includes("const [availabilityEmail, setAvailabilityEmail] = useState
   );
 }
 
-// Browser autofill can populate the visible input without updating React state.
-// Always trust the live DOM value first and validate it ourselves rather than
-// relying on HTMLInputElement.validity, which can be stale during autofill.
-const newCheck = `  const checkAvailability = async () => {\n    if (!date) return setMessage('Please select a wedding date.');\n\n    const emailInputs = Array.from(document.querySelectorAll('.availability-contact-fields input[type="email"]'));\n    const phoneInputs = Array.from(document.querySelectorAll('.availability-contact-fields input[type="tel"]'));\n    const emailInput = emailInputs.find(input => input.offsetParent !== null) || emailInputs[0];\n    const phoneInput = phoneInputs.find(input => input.offsetParent !== null) || phoneInputs[0];\n\n    const emailValue = String(emailInput?.value || availabilityEmail || '').trim().replace(/\\s+/g, '');\n    const phoneValue = String(phoneInput?.value || availabilityPhone || '').trim();\n    const emailValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(emailValue);\n\n    if (!emailValid) return setMessage('Please enter a valid email address.');\n\n    const phoneDigits = phoneValue.replace(/\\D/g, '');\n    if (phoneDigits.length < 10 || phoneDigits.length > 15) return setMessage('Please enter a valid phone number.');\n\n    setAvailabilityEmail(emailValue);\n    setAvailabilityPhone(phoneValue);\n    setCheckingAvailability(true);\n    setMessage('');\n    setAvailabilitySubmitted(false);\n\n    try {\n      const result = await api.availability(venue.id, date);\n      setAvailability(result);\n\n      await api.requestAvailability({\n        venueId: String(venue.id),\n        venueName: String(venue.name),\n        city: String(venue.city || ''),\n        state: String(venue.state || ''),\n        date: String(date),\n        email: emailValue,\n        phone: phoneValue,\n        availabilityStatus: String(result.status || 'unknown')\n      });\n\n      setAvailabilitySubmitted(true);\n      setMessage('');\n    } catch (e) {\n      setMessage(e.message || 'Unable to submit the availability request right now.');\n    } finally {\n      setCheckingAvailability(false);\n    }\n  };`;
-
+// Replace the availability function with DOM-first validation. Chrome/Google
+// autofill can fill the visible input without firing React onChange.
 const start = source.indexOf('  const checkAvailability = async () => {');
 if (start < 0) throw new Error('Availability check block not found.');
 const end = source.indexOf('\n  };', start);
 if (end < 0) throw new Error('Availability check block end not found.');
+
+const newCheck = `  const checkAvailability = async () => {
+    if (!date) return setMessage('Please select a wedding date.');
+
+    const emailInputs = Array.from(document.querySelectorAll('.availability-contact-fields input[type="email"]'));
+    const phoneInputs = Array.from(document.querySelectorAll('.availability-contact-fields input[type="tel"]'));
+    const emailInput = emailInputs.find(input => input.offsetParent !== null) || emailInputs[0];
+    const phoneInput = phoneInputs.find(input => input.offsetParent !== null) || phoneInputs[0];
+
+    const emailValue = String(emailInput?.value || availabilityEmail || '').trim().replace(/\s+/g, '');
+    const phoneValue = String(phoneInput?.value || availabilityPhone || '').trim();
+
+    // Do not use input.validity here. The live DOM value is the source of truth.
+    if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailValue)) {
+      return setMessage('Please enter a valid email address.');
+    }
+
+    const phoneDigits = phoneValue.replace(/\D/g, '');
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      return setMessage('Please enter a valid phone number.');
+    }
+
+    setAvailabilityEmail(emailValue);
+    setAvailabilityPhone(phoneValue);
+    setCheckingAvailability(true);
+    setMessage('');
+    setAvailabilitySubmitted(false);
+
+    try {
+      const result = await api.availability(venue.id, date);
+      setAvailability(result);
+
+      await api.requestAvailability({
+        venueId: String(venue.id),
+        venueName: String(venue.name),
+        city: String(venue.city || ''),
+        state: String(venue.state || ''),
+        date: String(date),
+        email: emailValue,
+        phone: phoneValue,
+        availabilityStatus: String(result.status || 'unknown')
+      });
+
+      setAvailabilitySubmitted(true);
+      setMessage('');
+    } catch (e) {
+      setMessage(e.message || 'Unable to submit the availability request right now.');
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };`;
+
 source = source.slice(0, start) + newCheck + source.slice(end + '\n  };'.length);
 
-// Pass the availability contact state into BookingSheet.
+// Pass contact state to BookingSheet.
 source = source.replace(
   "{showBooking && <BookingSheet venue={venue} action={bookingAction} date={date} setDate={setDate} event={event} setEvent={setEvent} availability={availability} checkingAvailability={checkingAvailability} submit={submit} message={message} close={closeAction}/>} ",
   "{showBooking && <BookingSheet venue={venue} action={bookingAction} date={date} setDate={setDate} event={event} setEvent={setEvent} availability={availability} checkingAvailability={checkingAvailability} availabilityEmail={availabilityEmail} setAvailabilityEmail={setAvailabilityEmail} availabilityPhone={availabilityPhone} setAvailabilityPhone={setAvailabilityPhone} availabilitySubmitted={availabilitySubmitted} setAvailabilitySubmitted={setAvailabilitySubmitted} submit={submit} message={message} close={closeAction}/>} "
@@ -34,13 +83,20 @@ source = source.replace(
   "function BookingSheet({venue,action,date,setDate,event,setEvent,availability,checkingAvailability,availabilityEmail,setAvailabilityEmail,availabilityPhone,setAvailabilityPhone,availabilitySubmitted,setAvailabilitySubmitted,submit,message,close}) {"
 );
 
-const contactMarker = `      <label className="input-label">Event\\n        <select value={event} onChange={e => setEvent(e.target.value)}>\\n          <option value="All Events">All wedding events</option>\\n          <option>Main Wedding</option><option>Mehendi</option><option>Sangeet</option><option>Haldi</option><option>Reception</option>\\n        </select>\\n      </label>`;
-
-const contactFields = `${contactMarker}\\n\\n      {action === 'availability' && !availabilitySubmitted && <div className="availability-contact-fields">\\n        <label className="input-label">Email address\\n          <input type="email" value={availabilityEmail} onInput={e => setAvailabilityEmail(e.currentTarget.value)} onChange={e => setAvailabilityEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />\\n        </label>\\n        <label className="input-label">Phone number\\n          <input type="tel" value={availabilityPhone} onInput={e => setAvailabilityPhone(e.currentTarget.value)} onChange={e => setAvailabilityPhone(e.target.value)} placeholder="10-digit mobile number" autoComplete="tel" inputMode="tel" required />\\n        </label>\\n      </div>}`;
-
+// Add email + phone fields once, immediately after the Event field.
 if (!source.includes('availability-contact-fields')) {
-  if (!source.includes(contactMarker)) throw new Error('Booking event field block not found.');
-  source = source.replace(contactMarker, contactFields);
+  const eventField = /(<label className="input-label">Event[\s\S]*?<\/label>)/;
+  const contactFields = `$1
+    {action === 'availability' && !availabilitySubmitted && <div className="availability-contact-fields">
+      <label className="input-label">Email address
+        <input type="email" value={availabilityEmail} onInput={e => setAvailabilityEmail(e.currentTarget.value)} onChange={e => setAvailabilityEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />
+      </label>
+      <label className="input-label">Phone number
+        <input type="tel" value={availabilityPhone} onInput={e => setAvailabilityPhone(e.currentTarget.value)} onChange={e => setAvailabilityPhone(e.target.value)} placeholder="10-digit mobile number" autoComplete="tel" inputMode="tel" required />
+      </label>
+    </div>`;
+  if (!eventField.test(source)) throw new Error('Booking event field not found.');
+  source = source.replace(eventField, contactFields);
 } else {
   source = source.replace(
     /<input type="email" value=\{availabilityEmail\}[^>]*>/,
@@ -52,11 +108,21 @@ if (!source.includes('availability-contact-fields')) {
   );
 }
 
-const oldActions = `      <div className="booking-action-grid">\\n        <button className="outline-button wide" onClick={() => submit('availability')} disabled={checkingAvailability}>{checkingAvailability ? 'Checking…' : 'Check availability'}</button>\\n        <button className="outline-button wide" onClick={() => submit('book')} disabled={!!availability && !availability.canBook}>Book venue</button>\\n        <button className="primary-button wide" onClick={() => submit('hold')} disabled={!!availability && !availability.canHold}>Hold this date <ArrowRight size={16}/></button>\\n      </div>`;
-
-const newActions = `      {action === 'availability' && availabilitySubmitted ? <div className="availability-confirmation">\\n        <div className="availability-confirmation-icon"><Check size={22}/></div>\\n        <h3>Availability request submitted</h3>\\n        <p>The availability details will be shared via mail and WhatsApp.</p>\\n        <button className="primary-button wide" onClick={() => { setAvailabilitySubmitted(false); setMessage(''); setAvailability(null); }}>Done</button>\\n      </div> : <div className="booking-action-grid">\\n        <button className="outline-button wide" onClick={() => submit('availability')} disabled={checkingAvailability}>{checkingAvailability ? 'Checking…' : 'Check availability'}</button>\\n        <button className="outline-button wide" onClick={() => submit('book')} disabled={!!availability && !availability.canBook}>Book venue</button>\\n        <button className="primary-button wide" onClick={() => submit('hold')} disabled={!!availability && !availability.canHold}>Hold this date <ArrowRight size={16}/></button>\\n      </div>}`;
-
-if (source.includes(oldActions)) source = source.replace(oldActions, newActions);
+// Replace the three action buttons with the confirmation state for availability.
+const actionPattern = /      <div className="booking-action-grid">[\s\S]*?<\/div>/;
+if (!source.includes('availability-confirmation')) {
+  const confirmation = `      {action === 'availability' && availabilitySubmitted ? <div className="availability-confirmation">
+        <div className="availability-confirmation-icon"><Check size={22}/></div>
+        <h3>Availability request submitted</h3>
+        <p>The availability details will be shared via mail and WhatsApp.</p>
+        <button className="primary-button wide" onClick={() => { setAvailabilitySubmitted(false); setMessage(''); setAvailability(null); }}>Done</button>
+      </div> : <div className="booking-action-grid">
+        <button className="outline-button wide" onClick={() => submit('availability')} disabled={checkingAvailability}>{checkingAvailability ? 'Checking…' : 'Check availability'}</button>
+        <button className="outline-button wide" onClick={() => submit('book')} disabled={!!availability && !availability.canBook}>Book venue</button>
+        <button className="primary-button wide" onClick={() => submit('hold')} disabled={!!availability && !availability.canHold}>Hold this date <ArrowRight size={16}/></button>
+      </div>}`;
+  if (actionPattern.test(source)) source = source.replace(actionPattern, confirmation);
+}
 
 fs.writeFileSync(file, source);
-console.log('Availability request workflow fixed: DOM-first autofill-safe email validation, contact capture and confirmation.');
+console.log('Availability workflow fixed: live DOM email validation, autofill support, contact capture and confirmation.');
