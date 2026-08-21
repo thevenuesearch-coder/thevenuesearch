@@ -31,6 +31,16 @@ const replacement = String.raw`function VenuePage({ user, saved, toggleSave }) {
     setMessage('');
     setAvailability(null);
     setShowBooking(true);
+    requestAnimationFrame(() => {
+      const sheet = document.querySelector('.booking-sheet');
+      if (sheet) sheet.scrollTop = 0;
+    });
+  };
+
+  const closeAction = () => {
+    setShowBooking(false);
+    setMessage('');
+    setAvailability(null);
   };
 
   const checkAvailability = async () => {
@@ -72,6 +82,7 @@ const replacement = String.raw`function VenuePage({ user, saved, toggleSave }) {
         ? await api.createBooking(localStorage.getItem('vs_token'), payload)
         : await api.createHold(localStorage.getItem('vs_token'), payload);
       setMessage(result.message || (action === 'book' ? 'Venue booked successfully.' : 'Your refundable venue hold has been created.'));
+      setAvailability({ ...current, status: action === 'book' ? 'booked' : 'held', canBook: action !== 'book', canHold: false });
       setBookingAction(action);
     } catch (e) {
       setMessage(e.message || 'Unable to complete this request.');
@@ -91,7 +102,7 @@ const replacement = String.raw`function VenuePage({ user, saved, toggleSave }) {
       <div className="detail-section"><h2>Why couples choose it</h2><div className="amenity-grid">{['Verified capacity','Transparent pricing','Real venue photos','Date availability','Wedding support','Refundable hold'].map(x=><div key={x}><Check size={15}/>{x}</div>)}</div></div>
       <div className="detail-section"><h2>Good to know</h2><p>Check live availability first. An available date can be booked or placed on a refundable hold. A held date can still be booked by another customer, but it cannot be held again. Once booked, the date cannot be booked or held by anyone else.</p></div>
       <div className="sticky-cta">
-        <div><small>Starting from</small><b>{money(venue.price)}</b></div>
+        <div className="sticky-price"><small>Starting from</small><b>{money(venue.price)}</b></div>
         <div className="sticky-cta-actions">
           <button className="outline-button" onClick={() => openAction('availability')}>Check availability</button>
           <button className="outline-button" onClick={() => openAction('book')}>Book venue</button>
@@ -99,36 +110,67 @@ const replacement = String.raw`function VenuePage({ user, saved, toggleSave }) {
         </div>
       </div>
     </div>
-    {showBooking && <BookingSheet venue={venue} date={date} setDate={setDate} event={event} setEvent={setEvent} availability={availability} checkingAvailability={checkingAvailability} submit={submit} message={message} close={() => setShowBooking(false)}/>}
+    {showBooking && <BookingSheet venue={venue} action={bookingAction} date={date} setDate={setDate} event={event} setEvent={setEvent} availability={availability} checkingAvailability={checkingAvailability} submit={submit} message={message} close={closeAction}/>} 
   </main>;
 }
 
 function Stat({icon:Icon,value,label}) { return <div><Icon size={18}/><b>{value}</b><span>{label}</span></div>; }
 
-function BookingSheet({venue,date,setDate,event,setEvent,availability,checkingAvailability,submit,message,close}) {
+function BookingSheet({venue,action,date,setDate,event,setEvent,availability,checkingAvailability,submit,message,close}) {
   const available = availability?.status === 'available';
   const held = availability?.status === 'held';
-  return <div className="sheet-backdrop" onClick={close}><div className="booking-sheet" onClick={e => e.stopPropagation()}>
-    <div className="sheet-head"><div><span className="eyebrow">VENUE ACTIONS</span><h2>{venue.name}</h2></div><button className="icon-button" onClick={close}><X/></button></div>
-    <label className="input-label">Wedding date<input type="date" value={date} onChange={e => { setDate(e.target.value); setMessage(''); }} /></label>
-    <label className="input-label">Event<select value={event} onChange={e => setEvent(e.target.value)}><option value="All Events">All wedding events</option><option>Main Wedding</option><option>Mehendi</option><option>Sangeet</option><option>Haldi</option><option>Reception</option></select></label>
-    {availability && <div className={"notice " + (available ? '' : 'error')}><b>{available ? 'Available' : held ? 'On hold' : 'Booked'}</b> · {date}</div>}
-    <div className="hold-selected-venue"><span>Selected venue</span><b>{venue.name}</b><small>{venue.city} · {money(venue.price)}</small></div>
-    <div className="hold-summary"><div><span>Venue price</span><b>{money(venue.price)}</b></div><div><span>Refundable hold amount</span><b>{money(holdFee(venue.price))}</b></div><small>This hold amount is refundable. There is no hold-duration rule in the venue workflow.</small></div>
-    {message && <div className="notice">{message}</div>}
-    <div className="booking-action-grid">
-      <button className="outline-button wide" onClick={() => submit('availability')} disabled={checkingAvailability}>{checkingAvailability ? 'Checking…' : 'Check availability'}</button>
-      <button className="outline-button wide" onClick={() => submit('book')} disabled={!!availability && !availability.canBook}>Book venue</button>
-      <button className="primary-button wide" onClick={() => submit('hold')} disabled={!!availability && !availability.canHold}>Hold this date <ArrowRight size={16}/></button>
+  const booked = availability?.status === 'booked';
+  return <div className="sheet-backdrop booking-backdrop" onClick={close}>
+    <div className="booking-sheet" role="dialog" aria-modal="true" aria-label="Venue booking actions" onClick={e => e.stopPropagation()}>
+      <div className="sheet-head">
+        <div><span className="eyebrow">VENUE ACTIONS</span><h2>{venue.name}</h2><p className="sheet-subtitle">Select your date, then check or secure it.</p></div>
+        <button className="icon-button" onClick={close} aria-label="Close"><X/></button>
+      </div>
+
+      <label className="input-label date-field-label">Wedding date
+        <div className="date-input-wrap">
+          <CalendarDays size={18}/>
+          <input type="date" value={date} min={new Date().toISOString().slice(0,10)} onChange={e => { setDate(e.target.value); setMessage(''); setAvailability(null); }} aria-label="Wedding date" />
+        </div>
+      </label>
+
+      <label className="input-label">Event
+        <select value={event} onChange={e => setEvent(e.target.value)}>
+          <option value="All Events">All wedding events</option>
+          <option>Main Wedding</option><option>Mehendi</option><option>Sangeet</option><option>Haldi</option><option>Reception</option>
+        </select>
+      </label>
+
+      <div className="hold-selected-venue"><span>Selected venue</span><b>{venue.name}</b><small>{venue.city} · {money(venue.price)}</small></div>
+      <div className="hold-summary"><div><span>Venue price</span><b>{money(venue.price)}</b></div><div><span>Refundable hold amount</span><b>{money(holdFee(venue.price))}</b></div><small>This holding amount is refundable. There is no hold-duration rule in the venue workflow.</small></div>
+
+      {availability && <div className={"availability-status " + (available ? 'available' : held ? 'held' : 'booked')}>
+        <span className="status-dot"/><b>{available ? 'Available' : held ? 'On hold' : 'Booked'}</b><span>· {date}</span>
+      </div>}
+
+      {message && <div className={"notice " + (booked ? 'error' : '')}>{message}</div>}
+
+      <div className="booking-action-grid">
+        <button className="outline-button wide" onClick={() => submit('availability')} disabled={checkingAvailability}>{checkingAvailability ? 'Checking…' : 'Check availability'}</button>
+        <button className="outline-button wide" onClick={() => submit('book')} disabled={!!availability && !availability.canBook}>Book venue</button>
+        <button className="primary-button wide" onClick={() => submit('hold')} disabled={!!availability && !availability.canHold}>Hold this date <ArrowRight size={16}/></button>
+      </div>
+
+      {!availability && <small className="booking-hint">Select a date and check availability before securing it.</small>}
+      {available && <small className="booking-hint">Available: you can book it or place a refundable hold.</small>}
+      {held && <small className="booking-hint">Held: another customer can still book this date, but nobody else can place another hold.</small>}
+      {booked && <small className="booking-hint">Booked: this date is unavailable for both booking and holding.</small>}
     </div>
-    {!availability && <small className="booking-hint">Check availability before booking or holding your date.</small>}
-    {available && <small className="booking-hint">Available: you can book it or place a refundable hold.</small>}
-    {held && <small className="booking-hint">This date is held, but another customer can still book it. A second hold is not allowed.</small>}
-  </div></div>;
+  </div>;
 }
 
 `;
 
 source = source.slice(0, start) + replacement + source.slice(end);
+
+// Convert the remaining date fields into the same native calendar experience.
+source = source.replace(/<input type="date" value=\{date\} onChange=\{e=>setDate\(e\.target\.value\)\} \/>/g, '<input type="date" value={date} min={new Date().toISOString().slice(0,10)} onChange={e=>setDate(e.target.value)} />');
+source = source.replace(/<input type="date" value=\{date\} onChange=\{e=>setDate\(e\.target\.value\)\} aria-label="Wedding date"\/>/g, '<input type="date" value={date} min={new Date().toISOString().slice(0,10)} onChange={e=>setDate(e.target.value)} aria-label="Wedding date" />');
+
 fs.writeFileSync(file, source);
-console.log('Venue Search frontend production patch applied.');
+console.log('Venue Search venue actions and calendar workflow applied.');
