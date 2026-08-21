@@ -1,3 +1,5 @@
+require('./availability-preload');
+
 const BENCHMARKS = {
   Udaipur: { baseGuests: 150, baseDays: 3, baseTotal: 4520000, venue: 1000000, foodPerPlate: 3500, roomPerNight: 10000, decor: 550000, photo: 350000, entertainment: 250000, logistics: 150000 },
   Jaipur: { baseGuests: 150, baseDays: 3, baseTotal: 4300000, venue: 1200000, foodPerPlate: 3200, roomPerNight: 8500, decor: 450000, photo: 300000, entertainment: 200000, logistics: 120000 },
