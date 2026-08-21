@@ -110,7 +110,7 @@ function BookingSheet({venue,date,setDate,event,setEvent,availability,checkingAv
   const held = availability?.status === 'held';
   return <div className="sheet-backdrop" onClick={close}><div className="booking-sheet" onClick={e => e.stopPropagation()}>
     <div className="sheet-head"><div><span className="eyebrow">VENUE ACTIONS</span><h2>{venue.name}</h2></div><button className="icon-button" onClick={close}><X/></button></div>
-    <label className="input-label">Wedding date<input type="date" value={date} onChange={e => { setDate(e.target.value); setAvailability(null); setMessage(''); }} /></label>
+    <label className="input-label">Wedding date<input type="date" value={date} onChange={e => { setDate(e.target.value); setMessage(''); }} /></label>
     <label className="input-label">Event<select value={event} onChange={e => setEvent(e.target.value)}><option value="All Events">All wedding events</option><option>Main Wedding</option><option>Mehendi</option><option>Sangeet</option><option>Haldi</option><option>Reception</option></select></label>
     {availability && <div className={\`notice \${available ? '' : 'error'}\`}><b>{available ? 'Available' : held ? 'On hold' : 'Booked'}</b> · {date}</div>}
     <div className="hold-selected-venue"><span>Selected venue</span><b>{venue.name}</b><small>{venue.city} · {money(venue.price)}</small></div>
