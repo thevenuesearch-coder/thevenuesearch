@@ -54,7 +54,7 @@ const replacement = String.raw`function VenuePage({ user, saved, toggleSave }) {
     if (!date) return setMessage('Please select a wedding date.');
     if (action === 'availability') return checkAvailability();
     if (!user || !localStorage.getItem('vs_token')) {
-      navigate('/login', { state: { from: \`/venues/${id}\` } });
+      navigate('/login', { state: { from: '/venues/' + id } });
       return;
     }
     try {
