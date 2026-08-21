@@ -12,8 +12,10 @@ if (!source.includes("const [availabilityEmail, setAvailabilityEmail] = useState
   );
 }
 
-// Replace or refresh the availability check so browser autofill is read from the
-// actual input element instead of relying only on React onChange events.
+// Replace or refresh the availability check. The submitted values are read from
+// the actual inputs as a fallback because browser autofill may not fire React's
+// onChange event, which previously caused a valid visible Gmail address to be
+// rejected as empty.
 const newCheck = `  const checkAvailability = async () => {\n    if (!date) return setMessage('Please select a wedding date.');\n    const emailValue = String(availabilityEmail || document.querySelector('.availability-contact-fields input[type="email"]')?.value || '').trim();\n    const phoneValue = String(availabilityPhone || document.querySelector('.availability-contact-fields input[type="tel"]')?.value || '').trim();\n    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(emailValue)) return setMessage('Please enter a valid email address.');\n    const phoneDigits = phoneValue.replace(/\\D/g, '');\n    if (phoneDigits.length < 10 || phoneDigits.length > 15) return setMessage('Please enter a valid phone number.');\n    setAvailabilityEmail(emailValue);\n    setAvailabilityPhone(phoneValue);\n    setCheckingAvailability(true);\n    setMessage('');\n    setAvailabilitySubmitted(false);\n    try {\n      const result = await api.availability(venue.id, date);\n      setAvailability(result);\n      await api.requestAvailability({\n        venueId: String(venue.id),\n        venueName: String(venue.name),\n        city: String(venue.city || ''),\n        state: String(venue.state || ''),\n        date: String(date),\n        email: emailValue,\n        phone: phoneValue,\n        availabilityStatus: String(result.status || 'unknown')\n      });\n      setAvailabilitySubmitted(true);\n    } catch (e) {\n      setMessage(e.message || 'Unable to submit the availability request right now.');\n    } finally {\n      setCheckingAvailability(false);\n    }\n  };`;
 
 const oldCheck = `  const checkAvailability = async () => {\n    if (!date) return setMessage('Please select a wedding date.');\n    setCheckingAvailability(true);\n    setMessage('');\n    try {\n      const result = await api.availability(venue.id, date);\n      setAvailability(result);\n      if (result.status === 'available') setMessage('This venue is available for your selected date.');\n      else if (result.status === 'held') setMessage('This date is currently on hold. It can still be booked, but it cannot be held again.');\n      else setMessage('This date is already booked. Other users cannot book or hold it.');\n    } catch (e) {\n      setMessage(e.message || 'Unable to check availability right now.');\n    } finally {\n      setCheckingAvailability(false);\n    }\n  };`;
@@ -21,9 +23,10 @@ const oldCheck = `  const checkAvailability = async () => {\n    if (!date) retu
 if (source.includes(oldCheck)) {
   source = source.replace(oldCheck, newCheck);
 } else {
-  const checkPattern = /  const checkAvailability = async \(\) => \{[\\s\\S]*?  \};/;
-  if (!checkPattern.test(source)) throw new Error('Availability check block not found.');
-  source = source.replace(checkPattern, newCheck.trimEnd());
+  const start = source.indexOf('  const checkAvailability = async () => {');
+  const end = start >= 0 ? source.indexOf('\n  };', start) : -1;
+  if (start < 0 || end < 0) throw new Error('Availability check block not found.');
+  source = source.slice(0, start) + newCheck.trimEnd() + source.slice(end + '\n  };'.length);
 }
 
 source = source.replace(
