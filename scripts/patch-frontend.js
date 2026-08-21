@@ -82,12 +82,12 @@ const replacement = String.raw`function VenuePage({ user, saved, toggleSave }) {
     <div className="detail-gallery">
       <button className="back-button" onClick={() => navigate(-1)}><ArrowLeft/></button>
       <img src={venue.image} alt={venue.name}/>
-      <button className={\`gallery-save \${isSaved ? 'saved' : ''}\`} onClick={() => toggleSave(venue.id)}><Heart fill={isSaved ? 'currentColor' : 'none'}/></button>
+      <button className={"gallery-save " + (isSaved ? "saved" : "")} onClick={() => toggleSave(venue.id)}><Heart fill={isSaved ? 'currentColor' : 'none'}/></button>
     </div>
     <div className="detail-body">
       <div className="detail-title-row"><div><span className="eyebrow">VERIFIED VENUE · {venue.mode}</span><h1>{venue.name}</h1><p className="location-line"><MapPin size={15}/>{venue.city}, {venue.state}</p></div><span className="detail-rating"><Star size={14} fill="currentColor"/>{venue.rating}<small>({venue.reviews})</small></span></div>
       <p className="detail-description">{venue.description}</p>
-      <div className="detail-stats"><Stat icon={Users} value={\`\${venue.capacity}\`} label="Guests"/><Stat icon={WalletCards} value={money(venue.price)} label="Starting from"/><Stat icon={Clock3} value="Refundable hold" label="Hold option"/></div>
+      <div className="detail-stats"><Stat icon={Users} value={venue.capacity} label="Guests"/><Stat icon={WalletCards} value={money(venue.price)} label="Starting from"/><Stat icon={Clock3} value="Refundable hold" label="Hold option"/></div>
       <div className="detail-section"><h2>Why couples choose it</h2><div className="amenity-grid">{['Verified capacity','Transparent pricing','Real venue photos','Date availability','Wedding support','Refundable hold'].map(x=><div key={x}><Check size={15}/>{x}</div>)}</div></div>
       <div className="detail-section"><h2>Good to know</h2><p>Check live availability first. An available date can be booked or placed on a refundable hold. A held date can still be booked by another customer, but it cannot be held again. Once booked, the date cannot be booked or held by anyone else.</p></div>
       <div className="sticky-cta">
@@ -112,7 +112,7 @@ function BookingSheet({venue,date,setDate,event,setEvent,availability,checkingAv
     <div className="sheet-head"><div><span className="eyebrow">VENUE ACTIONS</span><h2>{venue.name}</h2></div><button className="icon-button" onClick={close}><X/></button></div>
     <label className="input-label">Wedding date<input type="date" value={date} onChange={e => { setDate(e.target.value); setMessage(''); }} /></label>
     <label className="input-label">Event<select value={event} onChange={e => setEvent(e.target.value)}><option value="All Events">All wedding events</option><option>Main Wedding</option><option>Mehendi</option><option>Sangeet</option><option>Haldi</option><option>Reception</option></select></label>
-    {availability && <div className={\`notice \${available ? '' : 'error'}\`}><b>{available ? 'Available' : held ? 'On hold' : 'Booked'}</b> · {date}</div>}
+    {availability && <div className={"notice " + (available ? '' : 'error')}><b>{available ? 'Available' : held ? 'On hold' : 'Booked'}</b> · {date}</div>}
     <div className="hold-selected-venue"><span>Selected venue</span><b>{venue.name}</b><small>{venue.city} · {money(venue.price)}</small></div>
     <div className="hold-summary"><div><span>Venue price</span><b>{money(venue.price)}</b></div><div><span>Refundable hold amount</span><b>{money(holdFee(venue.price))}</b></div><small>This hold amount is refundable. There is no hold-duration rule in the venue workflow.</small></div>
     {message && <div className="notice">{message}</div>}
