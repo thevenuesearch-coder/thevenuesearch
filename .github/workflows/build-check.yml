@@ -14,8 +14,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      # Regenerate the lock metadata from package.json before the clean install.
-      # This prevents npm ci from failing when a dependency lock entry is stale.
-      - run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - run: npm ci --no-audit --no-fund
-      - run: npm run build
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build frontend
+        run: npm run build
