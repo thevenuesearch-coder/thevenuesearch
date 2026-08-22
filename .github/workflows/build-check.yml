@@ -1,0 +1,21 @@
+name: Production Build Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      # Regenerate the lock metadata from package.json before the clean install.
+      # This prevents npm ci from failing when a dependency lock entry is stale.
+      - run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build

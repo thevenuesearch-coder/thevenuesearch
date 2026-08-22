@@ -1,0 +1,207 @@
+require("dotenv").config();
+const express=require("express"); const cors=require("cors"); const fs=require("fs"); const path=require("path"); const crypto=require("crypto"); const jwt=require("jsonwebtoken"); const nodemailer=require("nodemailer"); const {getBudgetEstimate}=require("./pricingEngine");
+const app=express(); const PORT=process.env.API_PORT||5000; const JWT_SECRET=process.env.JWT_SECRET||"venue-search-local-secret-change-me"; const DATA_DIR=path.join(__dirname,"data"); if(!fs.existsSync(DATA_DIR))fs.mkdirSync(DATA_DIR,{recursive:true});
+const files={venues:path.join(DATA_DIR,"venues.json"),users:path.join(DATA_DIR,"users.json"),bookings:path.join(DATA_DIR,"bookings.json"),enquiries:path.join(DATA_DIR,"enquiries.json"),estimates:path.join(DATA_DIR,"estimates.json"),otps:path.join(DATA_DIR,"otps.json")};
+function write(f,d){fs.writeFileSync(f,JSON.stringify(d,null,2));} function read(f,fallback=[]){try{if(!fs.existsSync(f)){write(f,fallback);return fallback;}return JSON.parse(fs.readFileSync(f,"utf8"));}catch{return fallback;}}
+const seedVenues=[{id:"udaipur-palace",name:"The Lake Palace Estate",city:"Udaipur",state:"Rajasthan",price:1800000,capacity:450,rating:4.9,reviews:86,type:"Palace",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1400&q=88",tags:["Lake View","Luxury","Rooms"],description:"A grand lakeside setting designed for multi-day destination celebrations, with palace architecture, intimate courtyards and panoramic water views."},{id:"udaipur-garden",name:"Aravalli Garden Retreat",city:"Udaipur",state:"Rajasthan",price:950000,capacity:250,rating:4.8,reviews:54,type:"Resort",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1507504031003-b417219a0fde?auto=format&fit=crop&w=1400&q=88",tags:["Garden","Mountain View","Pool"],description:"A relaxed luxury resort surrounded by the Aravallis, ideal for intimate ceremonies, cocktail evenings and vibrant mehendi celebrations."},{id:"udaipur-lake-house",name:"The Lakeview Courtyard",city:"Udaipur",state:"Rajasthan",price:650000,capacity:180,rating:4.7,reviews:39,type:"Boutique",mode:"Instant Book",verified:true,image:"https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1400&q=88",tags:["Intimate","Lake View","Boutique"],description:"A private-feeling boutique venue for couples who want an elegant celebration without the scale of a large palace wedding."},{id:"jaipur-heritage",name:"Pink City Heritage Haveli",city:"Jaipur",state:"Rajasthan",price:1100000,capacity:300,rating:4.8,reviews:61,type:"Heritage",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=1400&q=88",tags:["Heritage","Courtyard","Luxury"],description:"A character-rich Jaipur haveli with courtyards, terraces and heritage details for traditional Indian celebrations."},{id:"goa-coast",name:"Coco Palm Beach Resort",city:"Goa",state:"Goa",price:1250000,capacity:350,rating:4.9,reviews:72,type:"Beach Resort",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=88",tags:["Beach","Rooms","Pool"],description:"A tropical celebration venue with beachfront ceremony spaces, open-air dining and a relaxed destination wedding atmosphere."},{id:"kerala-backwater",name:"Backwater Banyan Retreat",city:"Alleppey",state:"Kerala",price:780000,capacity:220,rating:4.8,reviews:44,type:"Resort",mode:"Instant Book",verified:true,image:"https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1400&q=88",tags:["Backwaters","Garden","Intimate"],description:"A lush backwater retreat for couples looking for a slower, deeply scenic celebration with Kerala-inspired hospitality."},{id:"jaipur-royal-garden",name:"Amber Garden Palace",city:"Jaipur",state:"Rajasthan",price:1450000,capacity:380,rating:4.8,reviews:48,type:"Palace",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1400&q=88",tags:["Courtyard","Royal","Garden"],description:"A royal Jaipur setting with open courtyards and elegant gardens for multi-day celebrations."},{id:"goa-lagoon",name:"Azure Lagoon Resort",city:"Goa",state:"Goa",price:980000,capacity:280,rating:4.8,reviews:51,type:"Beach Resort",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=88",tags:["Beach","Pool","Sunset"],description:"A coastal venue with sunset lawns and private event spaces."},{id:"goa-cliff",name:"Cabo Sunset Estate",city:"Goa",state:"Goa",price:1550000,capacity:420,rating:4.9,reviews:67,type:"Luxury Resort",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=88",tags:["Cliffside","Sunset","Luxury"],description:"A dramatic coastal estate for large luxury celebrations."},{id:"kerala-heritage",name:"Heritage Backwater Palace",city:"Kerala",state:"Kerala",price:1320000,capacity:360,rating:4.9,reviews:55,type:"Heritage",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=88",tags:["Heritage","Backwater","Luxury"],description:"A heritage-inspired property with elegant waterfront spaces."},{id:"hyderabad-palace",name:"Falaknuma Inspired Estate",city:"Hyderabad",state:"Telangana",price:1600000,capacity:400,rating:4.8,reviews:44,type:"Palace",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=1400&q=88",tags:["Palace","Royal","Grand"],description:"A grand Hyderabad celebration setting inspired by the city's royal architecture."},{id:"hyderabad-lake",name:"Deccan Lake Resort",city:"Hyderabad",state:"Telangana",price:890000,capacity:260,rating:4.7,reviews:33,type:"Resort",mode:"Instant Book",verified:true,image:"https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1400&q=88",tags:["Lake","Garden","Rooms"],description:"A modern resort with flexible spaces for destination-style celebrations."},{id:"hyderabad-courtyard",name:"Deccan Courtyard House",city:"Hyderabad",state:"Telangana",price:580000,capacity:140,rating:4.6,reviews:21,type:"Boutique",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1400&q=88",tags:["Courtyard","Intimate","Modern"],description:"A stylish intimate venue for smaller celebrations."},{id:"udaipur-aravalli",name:"Aravalli Sunset Palace",city:"Udaipur",state:"Rajasthan",price:1380000,capacity:330,rating:4.9,reviews:63,type:"Heritage",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1606298855672-3efb63017be8?auto=format&fit=crop&w=1400&q=88",tags:["Aravalli","Sunset","Heritage"],description:"A panoramic Aravalli venue with sunset terraces and heritage architecture."},{id:"udaipur-garden-estate",name:"Mewar Garden Estate",city:"Udaipur",state:"Rajasthan",price:760000,capacity:210,rating:4.7,reviews:29,type:"Garden",mode:"Instant Book",verified:true,image:"https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=1400&q=88",tags:["Garden","Intimate","Open Air"],description:"A garden estate for colourful ceremonies and outdoor dinners."},{id:"udaipur-heritage",name:"Mewar Heritage Courtyard",city:"Udaipur",state:"Rajasthan",price:1080000,capacity:280,rating:4.8,reviews:42,type:"Heritage",mode:"Instant Hold",verified:true,image:"https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1400&q=88",tags:["Heritage","Courtyard","Luxury"],description:"A heritage courtyard combining traditional details with modern guest comfort."}];
+if(!fs.existsSync(files.venues))write(files.venues,seedVenues); for(const f of [files.users,files.bookings,files.enquiries,files.estimates,files.otps])if(!fs.existsSync(f))write(f,[]);
+app.use(cors({origin:true,credentials:true})); app.use(express.json());
+function publicUser(u){return{id:u.id,name:u.name,email:u.email,phone:u.phone||"",role:u.role};} function auth(req,res,next){const t=(req.headers.authorization||"").replace(/^Bearer\s+/i,"");if(!t)return res.status(401).json({message:"Sign in required"});try{req.user=jwt.verify(t,JWT_SECRET);next();}catch{return res.status(401).json({message:"Your session has expired. Please sign in again."});}}
+function calculateRequestAmount(price){return Math.min(75000,Math.max(15000,Math.round(price*.10)));} function activeRecords(bookings,venueId,date){return bookings.filter(b=>b.venueId===venueId&&b.date===date&&["held","confirmed"].includes(b.status));}
+app.get("/api/health",(_,res)=>res.json({ok:true,service:"Venue Search API"}));
+app.get("/api/venues",(req,res)=>{const{city,type,minGuests,maxPrice,q}=req.query;const venues=read(files.venues,seedVenues).filter(v=>(!city||v.city.toLowerCase()===city.toLowerCase())&&(!type||v.type===type)&&(!minGuests||v.capacity>=Number(minGuests))&&(!maxPrice||v.price<=Number(maxPrice))&&(!q||`${v.name} ${v.city} ${v.type}`.toLowerCase().includes(q.toLowerCase())));res.json({venues});});
+app.get("/api/venues/:id",(req,res)=>{const venue=read(files.venues,seedVenues).find(v=>v.id===req.params.id);if(!venue)return res.status(404).json({message:"Venue not found"});res.json({venue});});
+app.get("/api/venues/:id/availability",(req,res)=>{const date=String(req.query.date||"");if(!date)return res.status(400).json({message:"Date is required"});const venue=read(files.venues,seedVenues).find(v=>v.id===req.params.id);if(!venue)return res.status(404).json({message:"Venue not found"});const records=activeRecords(read(files.bookings,[]),venue.id,date);const confirmed=records.some(b=>b.status==="confirmed");const held=records.some(b=>b.status==="held");res.json({venueId:venue.id,date,status:confirmed?"booked":held?"held":"available",canBook:!confirmed,canHold:!confirmed&&!held,mode:venue.mode});});
+function otpHash(otp){return crypto.createHash("sha256").update(`${otp}:${JWT_SECRET}`).digest("hex");} function createMailer(){const{SMTP_HOST,SMTP_USER,SMTP_PASS}=process.env;if(!SMTP_HOST||!SMTP_USER||!SMTP_PASS)return null;return nodemailer.createTransport({host:SMTP_HOST,port:Number(process.env.SMTP_PORT||587),secure:String(process.env.SMTP_SECURE||"false")==="true",auth:{user:SMTP_USER,pass:SMTP_PASS}});}
+function normalizePhone(value){const s=String(value||"").trim(),d=s.replace(/\D/g,"");return d.length>=10&&d.length<=15?s:null;}
+async function sendAdminLoginNotification(mailer,user,mode){if(!mailer)return;const to=process.env.ADMIN_EMAIL||"thevenuesearch@gmail.com";await mailer.sendMail({from:process.env.MAIL_FROM||process.env.SMTP_USER,to,subject:`Venue Search - ${mode==="register"?"New account":"User login"}: ${user.name||user.email}`,text:`Name: ${user.name}\nEmail: ${user.email}\nPhone: ${user.phone||"Not provided"}`});}
+app.post("/api/auth/request-otp",async(req,res)=>{try{const email=String(req.body?.email||"").trim().toLowerCase(),name=String(req.body?.name||"").trim(),phone=normalizePhone(req.body?.phone),mode=req.body?.mode==="register"?"register":"login";if(!/^\S+@\S+\.\S+$/.test(email))return res.status(400).json({message:"Enter a valid email address."});const users=read(files.users,[]),existing=users.find(u=>u.email.toLowerCase()===email);if(mode==="register"&&existing)return res.status(409).json({message:"An account already exists with this email. Please use Sign in."});if(mode==="login"&&!existing)return res.status(404).json({message:"No account found with this email. Please create an account first."});if(!name)return res.status(400).json({message:"Enter your full name."});if(!phone)return res.status(400).json({message:"Enter a valid mobile number (10 to 15 digits)."});const otps=read(files.otps,[]);const recent=otps.find(x=>x.email===email&&Date.now()-new Date(x.createdAt).getTime()<60000);if(recent)return res.status(429).json({message:"Please wait a minute before requesting another OTP."});const otp=String(crypto.randomInt(100000,1000000));const filtered=otps.filter(x=>x.email!==email);filtered.push({id:crypto.randomUUID(),email,name,phone,mode,otpHash:otpHash(otp),attempts:0,createdAt:new Date().toISOString(),expiresAt:new Date(Date.now()+600000).toISOString()});write(files.otps,filtered);const mailer=createMailer();if(!mailer)return res.status(503).json({message:"Email service is not configured. Add SMTP settings to .env and restart the server."});await mailer.sendMail({from:process.env.MAIL_FROM||process.env.SMTP_USER,to:email,subject:"Your Venue Search verification code",text:`Your Venue Search OTP is ${otp}. It expires in 10 minutes.`});res.json({message:`OTP sent to ${email}`});}catch(e){console.error(e);res.status(500).json({message:"Unable to send OTP. Please try again."});}});
+app.post("/api/auth/verify-otp",async(req,res)=>{try{const email=String(req.body?.email||"").trim().toLowerCase(),otp=String(req.body?.otp||"").trim(),name=String(req.body?.name||"").trim(),phone=normalizePhone(req.body?.phone),mode=req.body?.mode==="register"?"register":"login";if(!email||!/^[0-9]{6}$/.test(otp))return res.status(400).json({message:"Enter the 6-digit OTP sent to your email."});if(!name||!phone)return res.status(400).json({message:"Name and a valid mobile number are required."});const otps=read(files.otps,[]),record=otps.find(x=>x.email===email);if(!record)return res.status(400).json({message:"This OTP is invalid or has expired. Request a new one."});if(new Date(record.expiresAt).getTime()<Date.now())return res.status(400).json({message:"This OTP has expired. Request a new one."});if(record.attempts>=5)return res.status(429).json({message:"Too many incorrect attempts. Request a new OTP."});if(otpHash(otp)!==record.otpHash){record.attempts+=1;write(files.otps,otps);return res.status(401).json({message:"Incorrect OTP. Please check your email and try again."});}const users=read(files.users,[]);let user=users.find(u=>u.email.toLowerCase()===email);if(mode==="register"){if(user)return res.status(409).json({message:"An account already exists with this email. Please sign in."});user={id:crypto.randomUUID(),name,email,phone,role:"couple",createdAt:new Date().toISOString(),emailVerified:true,authMethod:"email_otp"};users.push(user);}else{if(!user)return res.status(404).json({message:"No account found with this email. Please create an account first."});user.name=name;user.phone=phone;user.emailVerified=true;}write(files.users,users);write(files.otps,otps.filter(x=>x.id!==record.id));const mailer=createMailer();if(mailer)try{await sendAdminLoginNotification(mailer,user,mode);}catch(e){console.error(e);}const token=jwt.sign({id:user.id,role:user.role,email:user.email},JWT_SECRET,{expiresIn:"7d"});res.json({token,user:publicUser(user)});}catch(e){console.error(e);res.status(500).json({message:"Unable to verify OTP. Please try again."});}});
+app.get("/api/auth/me",auth,(req,res)=>{const user=read(files.users,[]).find(u=>u.id===req.user.id);if(!user)return res.status(404).json({message:"User not found"});res.json({user:publicUser(user)});}); app.get("/api/profile",auth,(req,res)=>{const user=read(files.users,[]).find(u=>u.id===req.user.id);if(!user)return res.status(404).json({message:"User not found"});res.json({user:publicUser(user)});});
+app.get("/api/estimates",auth,(req,res)=>res.json({estimates:read(files.estimates,[]).filter(x=>x.userId===req.user.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))}));
+app.post("/api/budget-estimate",auth,async(req,res)=>{try{const body=req.body||{},destination=String(body.destination||"").trim(),origin=String(body.origin||"").trim(),guests=Number(body.guests),days=Number(body.days),requestedEvents=Number(body.events),events=Number.isFinite(requestedEvents)&&requestedEvents>0?Math.min(10,Math.floor(requestedEvents)):1,date=body.date?String(body.date):"",rooms=body.rooms===true||body.rooms==="true"||body.rooms==="Yes",travel=String(body.travel||"Flights"),comfort=String(body.comfort||"Premium");if(!destination||!origin||!Number.isFinite(guests)||guests<1||!Number.isFinite(days)||days<1)return res.status(400).json({message:"Please select a destination, enter guests, choose travel origin and set wedding duration."});const estimate=await getBudgetEstimate({destination,guests,origin,date,days,rooms,events,travel,comfort});const estimates=read(files.estimates,[]);estimates.push({id:crypto.randomUUID(),userId:req.user.id,destination,guests,origin,date,days,rooms,events,travel,comfort,...estimate,createdAt:new Date().toISOString()});write(files.estimates,estimates);res.json(estimate);}catch(e){console.error("Budget estimate error:",e);res.status(500).json({message:e.message||"Unable to calculate budget"});}});
+app.post("/api/enquiries",(req,res)=>{const{name,email,phone,venueId,date,guestCount,message}=req.body||{};if(!name||!email||!venueId)return res.status(400).json({message:"Name, email and venue are required"});const enquiries=read(files.enquiries,[]);const enquiry={id:crypto.randomUUID(),name,email,phone,venueId,date,guestCount,message,status:"new",createdAt:new Date().toISOString()};enquiries.push(enquiry);write(files.enquiries,enquiries);res.status(201).json({message:"Enquiry received. The venue team can now respond.",enquiry});});
+app.post("/api/availability-request",async(req,res)=>{
+  try{
+    const body=req.body||{};
+    const venueId=String(body.venueId||"").trim();
+    const venueName=String(body.venueName||"").trim();
+    const city=String(body.city||"").trim();
+    const state=String(body.state||"").trim();
+    const date=String(body.date||"").trim();
+    const eventType=String(body.eventType||"Main Wedding").trim();
+    const email=String(body.email||"").trim().toLowerCase();
+    const phone=normalizePhone(body.phone);
+    const availabilityStatus=String(body.availabilityStatus||"unknown").trim();
+
+    if(!venueId||!venueName||!date||!email||!phone){
+      return res.status(400).json({message:"Venue, event date, email and phone number are required."});
+    }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+      return res.status(400).json({message:"Enter a valid email address."});
+    }
+
+    const venue=read(files.venues,seedVenues).find(v=>v.id===venueId);
+    if(!venue)return res.status(404).json({message:"Venue not found."});
+
+    const enquiries=read(files.enquiries,[]);
+    const request={
+      id:crypto.randomUUID(),
+      requestType:"availability",
+      venueId,
+      venueName,
+      city,
+      state,
+      date,
+      eventType,
+      email,
+      phone,
+      availabilityStatus,
+      status:"new",
+      createdAt:new Date().toISOString()
+    };
+    enquiries.push(request);
+    write(files.enquiries,enquiries);
+
+    const mailer=createMailer();
+    let emailQueued=false;
+    if(mailer){
+      try{
+        const adminTo=process.env.ADMIN_EMAIL||"thevenuesearch@gmail.com";
+        const customerText=[
+          `Thank you for your availability request for ${venueName}.`,
+          "",
+          `Event date: ${date}`,
+          `Event: ${eventType}`,
+          `Current availability: ${availabilityStatus}`,
+          "",
+          "Our team will share the detailed availability with you by email and WhatsApp shortly.",
+          "",
+          "Venue Search"
+        ].join("\n");
+
+        await mailer.sendMail({
+          from:process.env.MAIL_FROM||process.env.SMTP_USER,
+          to:adminTo,
+          replyTo:email,
+          subject:`Venue Search - Availability Request - ${venueName}`,
+          text:[
+            "NEW VENUE AVAILABILITY REQUEST",
+            "",
+            `Venue: ${venueName}`,
+            `Location: ${city}${state?`, ${state}`:""}`,
+            `Event date: ${date}`,
+            `Event: ${eventType}`,
+            `Customer email: ${email}`,
+            `Customer phone: ${phone}`,
+            `Current availability: ${availabilityStatus}`,
+            "",
+            "Please share the availability details with the customer by email and WhatsApp."
+          ].join("\n")
+        });
+
+        await mailer.sendMail({
+          from:process.env.MAIL_FROM||process.env.SMTP_USER,
+          to:email,
+          subject:`Venue Search - Availability request received for ${venueName}`,
+          text:customerText
+        });
+        emailQueued=true;
+      }catch(error){
+        console.error("Availability request email error:",error);
+      }
+    }
+
+    return res.status(201).json({
+      success:true,
+      message:"Availability request received.",
+      requestId:request.id,
+      emailQueued
+    });
+  }catch(error){
+    console.error("Availability request error:",error);
+    return res.status(500).json({message:"Unable to submit the availability request. Please try again."});
+  }
+});
+
+app.post("/api/holds",auth,(req,res)=>{
+  const {venueId,venueName,date,eventType="Main Wedding"}=req.body||{};
+  if(!venueId||!venueName||!date)return res.status(400).json({message:"Venue and date are required"});
+  const venue=read(files.venues,seedVenues).find(v=>v.id===venueId);
+  if(!venue)return res.status(404).json({message:"Venue not found"});
+  const bookings=read(files.bookings,[]);
+  const records=activeRecords(bookings,venueId,date);
+
+  if(records.some(b=>b.status==="confirmed")){
+    return res.status(409).json({message:"This venue is already booked for this date. You cannot book or hold it."});
+  }
+  if(records.some(b=>b.status==="held")){
+    return res.status(409).json({message:"This date is currently held by another customer. You can book it, but you cannot place another hold."});
+  }
+
+  const holdingAmount=calculateRequestAmount(venue.price);
+  const hold={
+    id:crypto.randomUUID(),
+    userId:req.user.id,
+    venueId,
+    venueName,
+    date,
+    eventType,
+    status:"held",
+    bookingType:"instant_hold_request",
+    holdingAmount,
+    holdFee:holdingAmount,
+    refundable:true,
+    createdAt:new Date().toISOString()
+  };
+  bookings.push(hold);
+  write(files.bookings,bookings);
+
+  return res.status(201).json({
+    message:`Instant holding request completed. Refundable holding amount: ₹${holdingAmount.toLocaleString("en-IN")}.`,
+    hold
+  });
+});
+
+app.post("/api/bookings",auth,(req,res)=>{
+  const {venueId,venueName,date,eventType="Main Wedding"}=req.body||{};
+  if(!venueId||!venueName||!date)return res.status(400).json({message:"Venue and date are required"});
+  const venue=read(files.venues,seedVenues).find(v=>v.id===venueId);
+  if(!venue)return res.status(404).json({message:"Venue not found"});
+  const bookings=read(files.bookings,[]);
+  const records=activeRecords(bookings,venueId,date);
+
+  if(records.some(b=>b.status==="confirmed")){
+    return res.status(409).json({message:"This venue is already booked for this date."});
+  }
+
+  const bookingAmount=calculateRequestAmount(venue.price);
+  // A booking supersedes an existing hold, while a held date remains bookable.
+  bookings.forEach(b=>{
+    if(b.venueId===venueId&&b.date===date&&b.status==="held")b.status="superseded";
+  });
+
+  const booking={
+    id:crypto.randomUUID(),
+    userId:req.user.id,
+    venueId,
+    venueName,
+    date,
+    eventType,
+    status:"confirmed",
+    bookingType:"instant_booking_request",
+    bookingAmount,
+    holdFee:0,
+    createdAt:new Date().toISOString()
+  };
+  bookings.push(booking);
+  write(files.bookings,bookings);
+
+  return res.status(201).json({
+    message:`Instant booking request completed. Booking amount: ₹${bookingAmount.toLocaleString("en-IN")}. The date is now unavailable to all other customers.`,
+    booking
+  });
+});
+
+app.get("/api/weddings",auth,(req,res)=>{const bookings=read(files.bookings,[]).filter(b=>b.userId===req.user.id&&["held","confirmed"].includes(b.status));const venues=read(files.venues,seedVenues);const events=bookings.map(b=>({eventType:b.eventType,venueId:b.venueId,venueName:b.venueName||venues.find(v=>v.id===b.venueId)?.name||"Venue",city:venues.find(v=>v.id===b.venueId)?.city,date:b.date,status:b.status}));res.json({wedding:{mainVenue:events.find(e=>e.eventType==="Main Wedding")||null,events}});});
+app.listen(PORT,()=>console.log(`Venue Search API running on http://localhost:${PORT}`));

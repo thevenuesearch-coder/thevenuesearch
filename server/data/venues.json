@@ -1,0 +1,302 @@
+[
+  {
+    "id": "udaipur-palace",
+    "name": "The Lake Palace Estate",
+    "city": "Udaipur",
+    "state": "Rajasthan",
+    "price": 1800000,
+    "capacity": 450,
+    "rating": 4.9,
+    "reviews": 86,
+    "type": "Palace",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Lake View",
+      "Luxury",
+      "Rooms"
+    ],
+    "description": "A grand lakeside setting designed for multi-day destination celebrations."
+  },
+  {
+    "id": "udaipur-garden",
+    "name": "Aravalli Garden Retreat",
+    "city": "Udaipur",
+    "state": "Rajasthan",
+    "price": 950000,
+    "capacity": 250,
+    "rating": 4.8,
+    "reviews": 54,
+    "type": "Resort",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1507504031003-b417219a0fde?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Garden",
+      "Mountain View",
+      "Pool"
+    ],
+    "description": "A relaxed luxury resort surrounded by the Aravallis."
+  },
+  {
+    "id": "udaipur-lake-house",
+    "name": "The Lakeview Courtyard",
+    "city": "Udaipur",
+    "state": "Rajasthan",
+    "price": 650000,
+    "capacity": 180,
+    "rating": 4.7,
+    "reviews": 39,
+    "type": "Boutique",
+    "mode": "Instant Book",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Intimate",
+      "Lake View",
+      "Boutique"
+    ],
+    "description": "A private-feeling boutique venue for intimate celebrations."
+  },
+  {
+    "id": "jaipur-heritage",
+    "name": "Pink City Heritage Haveli",
+    "city": "Jaipur",
+    "state": "Rajasthan",
+    "price": 1100000,
+    "capacity": 300,
+    "rating": 4.7,
+    "reviews": 25,
+    "type": "Heritage",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Heritage",
+      "Courtyard",
+      "Luxury"
+    ],
+    "description": "A curated heritage venue in Jaipur for destination wedding celebrations."
+  },
+  {
+    "id": "jaipur-royal-garden",
+    "name": "Amber Garden Palace",
+    "city": "Jaipur",
+    "state": "Rajasthan",
+    "price": 1450000,
+    "capacity": 380,
+    "rating": 4.8,
+    "reviews": 26,
+    "type": "Palace",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Courtyard",
+      "Royal",
+      "Garden"
+    ],
+    "description": "A curated palace venue in Jaipur for destination wedding celebrations."
+  },
+  {
+    "id": "jaipur-pink-resort",
+    "name": "Pink City Courtyard Resort",
+    "city": "Jaipur",
+    "state": "Rajasthan",
+    "price": 820000,
+    "capacity": 240,
+    "rating": 4.9,
+    "reviews": 27,
+    "type": "Resort",
+    "mode": "Instant Book",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Pool",
+      "Courtyard",
+      "Rooms"
+    ],
+    "description": "A curated resort venue in Jaipur for destination wedding celebrations."
+  },
+  {
+    "id": "goa-coast",
+    "name": "Coco Palm Beach Resort",
+    "city": "Goa",
+    "state": "Goa",
+    "price": 1250000,
+    "capacity": 350,
+    "rating": 4.7,
+    "reviews": 28,
+    "type": "Beach Resort",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Beach",
+      "Rooms",
+      "Pool"
+    ],
+    "description": "A curated beach resort venue in Goa for destination wedding celebrations."
+  },
+  {
+    "id": "goa-lagoon",
+    "name": "Azure Lagoon Resort",
+    "city": "Goa",
+    "state": "Goa",
+    "price": 980000,
+    "capacity": 280,
+    "rating": 4.8,
+    "reviews": 29,
+    "type": "Beach Resort",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Beach",
+      "Pool",
+      "Sunset"
+    ],
+    "description": "A curated beach resort venue in Goa for destination wedding celebrations."
+  },
+  {
+    "id": "goa-palm",
+    "name": "Palm Grove Celebration House",
+    "city": "Goa",
+    "state": "Goa",
+    "price": 720000,
+    "capacity": 190,
+    "rating": 4.9,
+    "reviews": 30,
+    "type": "Boutique",
+    "mode": "Instant Book",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Palm Grove",
+      "Intimate",
+      "Beach"
+    ],
+    "description": "A curated boutique venue in Goa for destination wedding celebrations."
+  },
+  {
+    "id": "kerala-backwater",
+    "name": "Backwater Banyan Retreat",
+    "city": "Kerala",
+    "state": "Kerala",
+    "price": 780000,
+    "capacity": 220,
+    "rating": 4.7,
+    "reviews": 31,
+    "type": "Resort",
+    "mode": "Instant Book",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Backwaters",
+      "Garden",
+      "Intimate"
+    ],
+    "description": "A curated resort venue in Kerala for destination wedding celebrations."
+  },
+  {
+    "id": "kerala-houseboat",
+    "name": "Vembanad Lake Retreat",
+    "city": "Kerala",
+    "state": "Kerala",
+    "price": 840000,
+    "capacity": 220,
+    "rating": 4.8,
+    "reviews": 32,
+    "type": "Resort",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Backwaters",
+      "Lake",
+      "Garden"
+    ],
+    "description": "A curated resort venue in Kerala for destination wedding celebrations."
+  },
+  {
+    "id": "kerala-palms",
+    "name": "Coconut Grove Estate",
+    "city": "Kerala",
+    "state": "Kerala",
+    "price": 610000,
+    "capacity": 150,
+    "rating": 4.9,
+    "reviews": 33,
+    "type": "Boutique",
+    "mode": "Instant Book",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Coconut Grove",
+      "Intimate",
+      "Nature"
+    ],
+    "description": "A curated boutique venue in Kerala for destination wedding celebrations."
+  },
+  {
+    "id": "hyderabad-palace",
+    "name": "Falaknuma Inspired Estate",
+    "city": "Hyderabad",
+    "state": "Telangana",
+    "price": 1600000,
+    "capacity": 400,
+    "rating": 4.7,
+    "reviews": 34,
+    "type": "Palace",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Palace",
+      "Royal",
+      "Grand"
+    ],
+    "description": "A curated palace venue in Hyderabad for destination wedding celebrations."
+  },
+  {
+    "id": "hyderabad-lake",
+    "name": "Deccan Lake Resort",
+    "city": "Hyderabad",
+    "state": "Telangana",
+    "price": 890000,
+    "capacity": 260,
+    "rating": 4.8,
+    "reviews": 35,
+    "type": "Resort",
+    "mode": "Instant Book",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Lake",
+      "Garden",
+      "Rooms"
+    ],
+    "description": "A curated resort venue in Hyderabad for destination wedding celebrations."
+  },
+  {
+    "id": "hyderabad-courtyard",
+    "name": "Deccan Courtyard House",
+    "city": "Hyderabad",
+    "state": "Telangana",
+    "price": 580000,
+    "capacity": 140,
+    "rating": 4.9,
+    "reviews": 36,
+    "type": "Boutique",
+    "mode": "Instant Hold",
+    "verified": true,
+    "image": "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1400&q=88",
+    "tags": [
+      "Courtyard",
+      "Intimate",
+      "Modern"
+    ],
+    "description": "A curated boutique venue in Hyderabad for destination wedding celebrations."
+  }
+]

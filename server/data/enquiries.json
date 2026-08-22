@@ -1,0 +1,17 @@
+[
+  {
+    "id": "2ae2ac2b-833a-42a5-8c9a-a38d96a4f71c",
+    "requestType": "availability",
+    "venueId": "udaipur-palace",
+    "venueName": "The Lake Palace Estate",
+    "city": "Udaipur",
+    "state": "Rajasthan",
+    "date": "2027-02-20",
+    "eventType": "All Events",
+    "email": "praneethvarmaofficial@gmail.com",
+    "phone": "9876543210",
+    "availabilityStatus": "available",
+    "status": "new",
+    "createdAt": "2026-08-21T13:19:43.291Z"
+  }
+]
