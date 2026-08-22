@@ -1,0 +1,39 @@
+/* Compact venue action bar: prevents the fixed CTA from covering venue content. */
+.sticky-cta{
+  min-height:86px;
+  padding:12px clamp(18px,4vw,56px);
+  gap:28px;
+  justify-content:center;
+}
+.sticky-price{
+  min-width:235px;
+  display:grid;
+  gap:2px;
+}
+.sticky-cta-actions{
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:stretch;
+  gap:10px;
+  flex:0 1 900px;
+}
+.sticky-cta-actions > button{
+  flex:1 1 0;
+  min-width:0;
+}
+.detail-body{padding-bottom:120px}
+@media(max-width:900px){
+  .sticky-cta{justify-content:stretch;gap:14px;padding:10px 16px}
+  .sticky-price{min-width:190px}
+  .sticky-cta-actions{flex:1 1 auto;display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:640px){
+  .detail-body{padding-bottom:180px}
+  .sticky-cta{display:block!important;padding:10px 12px calc(10px + env(safe-area-inset-bottom))!important}
+  .sticky-price{display:flex!important;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .sticky-price small{display:none}
+  .sticky-price b{font-size:14px}
+  .sticky-price span{margin:0;font-size:8px}
+  .sticky-cta-actions{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:6px}
+  .sticky-cta-actions .outline-button,.sticky-cta-actions .primary-button{min-height:43px;padding:0 5px!important;white-space:normal;line-height:1.15;font-size:9px!important}
+}
