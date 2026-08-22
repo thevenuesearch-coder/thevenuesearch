@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "react-scripts start",
-    "build": "node scripts/patch-frontend.js && node scripts/patch-frontend-styles.js && node scripts/patch-availability-request.js && node scripts/patch-availability-styles.js && CI=false DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "build": "CI=false DISABLE_ESLINT_PLUGIN=true react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "server": "node -r ./server/availability-preload.js server/server.js",
@@ -22,7 +22,6 @@
     "react-router-dom": "^6.28.1",
     "react-scripts": "^5.0.1",
     "mongoose": "^8.9.5",
-    "dotenv": "^16.4.7",
     "nodemailer": "^7.0.6"
   },
   "devDependencies": {
